@@ -10,24 +10,24 @@ const API = 'https://movie.azurewebsites.net/api/cartelera';
 const truncate = (txt, n = 100) => typeof txt === 'string' && txt.length > n ? txt.slice(0, n - 1).trimEnd() + '…' : txt;
 const asText = v => v == null ? '' : Array.isArray(v) ? v.join(', ') : (typeof v === 'object' ? JSON.stringify(v) : String(v));
 const getPosterUrl = o => {
-    const p = o?.Poster ?? o?.poster ?? o?.image ?? o?.posterUrl ?? o?.img;
-    return (typeof p === 'string' && /^https?:\/\//.test(p)) ? p : null;
+  const p = o?.Poster ?? o?.poster ?? o?.image ?? o?.posterUrl ?? o?.img;
+  return (typeof p === 'string' && /^https?:\/\//.test(p)) ? p : null;
 };
 const buildListURL = (title, ubication) => `${API}?${new URLSearchParams({ title: (title || '').trim(), ubication: (ubication || '').trim() })}`;
 const buildDetailURL = imdbID => `${API}?${new URLSearchParams({ imdbID })}`;
 
 // ===== Componentes =====
 const MovieCard = {
-    name: 'MovieCard',
-    props: { item: { type: Object, required: true } },
-    setup(props) {
-        const title = computed(() => props.item.Title || props.item.title || props.item.Nombre || 'Película');
-        const imdbID = computed(() => props.item.imdbID ?? props.item.imdbId ?? props.item.id ?? '');
-        const poster = computed(() => getPosterUrl(props.item));
-        const fields = computed(() => props.item);
-        return { title, imdbID, poster, fields, truncate, asText };
-    },
-    template: `
+  name: 'MovieCard',
+  props: { item: { type: Object, required: true } },
+  setup(props) {
+    const title = computed(() => props.item.Title || props.item.title || props.item.Nombre || 'Película');
+    const imdbID = computed(() => props.item.imdbID ?? props.item.imdbId ?? props.item.id ?? '');
+    const poster = computed(() => getPosterUrl(props.item));
+    const fields = computed(() => props.item);
+    return { title, imdbID, poster, fields, truncate, asText };
+  },
+  template: `
     <article class="card h-100 shadow-sm">
       <img v-if="poster" :src="poster" :alt="'Poster de ' + title" class="card-img-top" @error="$event.target.style.display='none'">
       <div class="card-body">
@@ -47,54 +47,54 @@ const MovieCard = {
 };
 
 const ListView = {
-    name: 'ListView',
-    components: { MovieCard, RouterLink },
-    setup() {
-        const route = useRoute();
-        const router = useRouter();
+  name: 'ListView',
+  components: { MovieCard, RouterLink },
+  setup() {
+    const route = useRoute();
+    const router = useRouter();
 
-        const title = ref(route.query.title || '');
-        const ubication = ref(route.query.ubication || '');
+    const title = ref(route.query.title || '');
+    const ubication = ref(route.query.ubication || '');
 
-        const loading = ref(false);
-        const error = ref('');
-        const items = ref([]);
+    const loading = ref(false);
+    const error = ref('');
+    const items = ref([]);
 
-        const fetchList = async () => {
-            loading.value = true; error.value = ''; items.value = [];
-            try {
-                const url = buildListURL(title.value, ubication.value);
-                const res = await fetch(url);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-                // ← FUSIÓN con localStorage
-                items.value = composeListWithLocal(data, { title: title.value, ubication: ubication.value });
-            } catch (e) { error.value = e.message; }
-            finally { loading.value = false; }
-        };
+    const fetchList = async () => {
+      loading.value = true; error.value = ''; items.value = [];
+      try {
+        const url = buildListURL(title.value, ubication.value);
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        // ← FUSIÓN con localStorage
+        items.value = composeListWithLocal(data, { title: title.value, ubication: ubication.value });
+      } catch (e) { error.value = e.message; }
+      finally { loading.value = false; }
+    };
 
 
-        const onSubmit = () => {
-            router.replace({
-                name: 'home', query: {
-                    title: title.value.trim(),
-                    ubication: ubication.value.trim()
-                }
-            });
-        };
+    const onSubmit = () => {
+      router.replace({
+        name: 'home', query: {
+          title: title.value.trim(),
+          ubication: ubication.value.trim()
+        }
+      });
+    };
 
-        // 🔹 Botón Limpiar: deja ambos filtros vacíos y relanza la consulta
-        const clearFilters = () => {
-            title.value = '';
-            ubication.value = '';
-            router.replace({ name: 'home', query: { title: '', ubication: '' } });
-        };
+    // 🔹 Botón Limpiar: deja ambos filtros vacíos y relanza la consulta
+    const clearFilters = () => {
+      title.value = '';
+      ubication.value = '';
+      router.replace({ name: 'home', query: { title: '', ubication: '' } });
+    };
 
-        watch(() => route.query, fetchList, { immediate: true });
+    watch(() => route.query, fetchList, { immediate: true });
 
-        return { title, ubication, loading, error, items, onSubmit, clearFilters };
-    },
-    template: `
+    return { title, ubication, loading, error, items, onSubmit, clearFilters };
+  },
+  template: `
     <section class="container container-narrow py-3">
       <form class="row g-3 align-items-end" @submit.prevent="onSubmit">
         <div class="col-12 col-md-5">
@@ -129,59 +129,59 @@ const ListView = {
 
 
 const DetailView = {
-    name: 'DetailView',
-    components: { RouterLink },
-    setup() {
-        const route = useRoute();
-        const imdbID = computed(() => route.params.imdbID);
-        const loading = ref(false);
-        const error = ref('');
-        const movie = ref(null);
+  name: 'DetailView',
+  components: { RouterLink },
+  setup() {
+    const route = useRoute();
+    const imdbID = computed(() => route.params.imdbID);
+    const loading = ref(false);
+    const error = ref('');
+    const movie = ref(null);
 
-        const fetchDetail = async () => {
-            loading.value = true; error.value = ''; movie.value = null;
-            try {
-                let raw = null;
-                try {
-                    const url = buildDetailURL(imdbID.value);
-                    const res = await fetch(url);
-                    // Si la API responde 404 u otro error, NO lanzamos; dejamos raw = null
-                    if (res.ok) raw = await res.json();
-                } catch { /* ignoramos fetch error para poder caer a adds */ }
+    const fetchDetail = async () => {
+      loading.value = true; error.value = ''; movie.value = null;
+      try {
+        let raw = null;
+        try {
+          const url = buildDetailURL(imdbID.value);
+          const res = await fetch(url);
+          // Si la API responde 404 u otro error, NO lanzamos; dejamos raw = null
+          if (res.ok) raw = await res.json();
+        } catch { /* ignoramos fetch error para poder caer a adds */ }
 
-                const base = Array.isArray(raw) ? (raw?.[0] ?? null) : raw;
-                movie.value = composeDetailWithLocal(base, imdbID.value);
-            } catch (e) {
-                error.value = e.message;
-            } finally {
-                loading.value = false;
-            }
-        };
+        const base = Array.isArray(raw) ? (raw?.[0] ?? null) : raw;
+        movie.value = composeDetailWithLocal(base, imdbID.value);
+      } catch (e) {
+        error.value = e.message;
+      } finally {
+        loading.value = false;
+      }
+    };
 
 
 
-        // Derivados para pintar limpio
-        const posterUrl = computed(() => movie.value ? getPosterUrl(movie.value) : null);
-        const titleTxt = computed(() => movie.value?.Title || movie.value?.title || movie.value?.Nombre || `Película ${imdbID.value}`);
+    // Derivados para pintar limpio
+    const posterUrl = computed(() => movie.value ? getPosterUrl(movie.value) : null);
+    const titleTxt = computed(() => movie.value?.Title || movie.value?.title || movie.value?.Nombre || `Película ${imdbID.value}`);
 
-        // Campos a mostrar (ocultamos Poster bruto para no romper diseño)
-        const fields = computed(() => {
-            if (!movie.value) return [];
-            const src = movie.value;
-            return [
-                { k: 'imdbID', v: src.imdbID ?? src.imdbId ?? src.id ?? '' },
-                { k: 'Title', v: src.Title ?? src.title ?? '' },
-                { k: 'Year', v: src.Year ?? src.year ?? '' },
-                { k: 'Type', v: src.Type ?? src.type ?? '' },
-                { k: 'description', v: src.description ?? src.Descripcion ?? src.Descripción ?? src.sinopsis ?? '' },
-                { k: 'Ubication', v: src.Ubication ?? src.ubication ?? src.ubicacion ?? '' },
-            ];
-        });
+    // Campos a mostrar (ocultamos Poster bruto para no romper diseño)
+    const fields = computed(() => {
+      if (!movie.value) return [];
+      const src = movie.value;
+      return [
+        { k: 'imdbID', v: src.imdbID ?? src.imdbId ?? src.id ?? '' },
+        { k: 'Title', v: src.Title ?? src.title ?? '' },
+        { k: 'Year', v: src.Year ?? src.year ?? '' },
+        { k: 'Type', v: src.Type ?? src.type ?? '' },
+        { k: 'description', v: src.description ?? src.Descripcion ?? src.Descripción ?? src.sinopsis ?? '' },
+        { k: 'Ubication', v: src.Ubication ?? src.ubication ?? src.ubicacion ?? '' },
+      ];
+    });
 
-        watch(imdbID, fetchDetail, { immediate: true });
-        return { imdbID, loading, error, movie, posterUrl, titleTxt, fields, asText };
-    },
-    template: `
+    watch(imdbID, fetchDetail, { immediate: true });
+    return { imdbID, loading, error, movie, posterUrl, titleTxt, fields, asText };
+  },
+  template: `
     <section class="container container-narrow py-3">
       <RouterLink :to="{name:'home'}" class="link-accent d-inline-block mb-3">← Volver</RouterLink>
 
@@ -216,8 +216,8 @@ const DetailView = {
 };
 
 const AppShell = {
-    components: { RouterLink, RouterView },
-    template: `
+  components: { RouterLink, RouterView },
+  template: `
     <div>
       <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container container-narrow py-1">
@@ -232,7 +232,7 @@ const AppShell = {
       </nav>
       <RouterView />
       <footer class="py-4 mt-4 text-center text-secondary">
-        <small>Vue 3 + Bootstrap 5 · Consumo de API REST · Filtros por query y detalle por <code>imdbID</code></small>
+        <small>&copy; 2025 Cartelera de Cine · Desarrollado por Carlos Eduardo Hernández Lecointe <code>1890-18-17646</code> · Todos los derechos reservados</small>
       </footer>
     </div>
   `
@@ -240,239 +240,239 @@ const AppShell = {
 
 // ===== Almacenamiento local (persistencia en el navegador) =====
 const STORAGE_KEYS = {
-    overrides: 'cartelera_overrides', // { [imdbID]: { ...camposEditados } }
-    adds: 'cartelera_adds',      // { [imdbID]: { ...peliculaNueva } }
-    deletes: 'cartelera_deletes'    // string[] de imdbID eliminados
+  overrides: 'cartelera_overrides', // { [imdbID]: { ...camposEditados } }
+  adds: 'cartelera_adds',      // { [imdbID]: { ...peliculaNueva } }
+  deletes: 'cartelera_deletes'    // string[] de imdbID eliminados
 };
 
 const loadJSON = (k, fallback) => {
-    try { return JSON.parse(localStorage.getItem(k)) ?? fallback; }
-    catch { return fallback; }
+  try { return JSON.parse(localStorage.getItem(k)) ?? fallback; }
+  catch { return fallback; }
 };
 const saveJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
 const store = {
-    getOverrides() { return loadJSON(STORAGE_KEYS.overrides, {}); },
-    setOverride(id, data) {
-        const cur = loadJSON(STORAGE_KEYS.overrides, {});
-        cur[id] = { ...(cur[id] || {}), ...data };
-        saveJSON(STORAGE_KEYS.overrides, cur);
-    },
-    removeOverride(id) {
-        const cur = loadJSON(STORAGE_KEYS.overrides, {});
-        delete cur[id];
-        saveJSON(STORAGE_KEYS.overrides, cur);
-    },
+  getOverrides() { return loadJSON(STORAGE_KEYS.overrides, {}); },
+  setOverride(id, data) {
+    const cur = loadJSON(STORAGE_KEYS.overrides, {});
+    cur[id] = { ...(cur[id] || {}), ...data };
+    saveJSON(STORAGE_KEYS.overrides, cur);
+  },
+  removeOverride(id) {
+    const cur = loadJSON(STORAGE_KEYS.overrides, {});
+    delete cur[id];
+    saveJSON(STORAGE_KEYS.overrides, cur);
+  },
 
-    getAdds() { return loadJSON(STORAGE_KEYS.adds, {}); },
-    addMovie(movie) {
-        const id = String(movie.imdbID ?? movie.imdbId ?? movie.id);
-        if (!id) throw new Error('La película nueva debe tener imdbID');
-        const cur = loadJSON(STORAGE_KEYS.adds, {});
-        cur[id] = movie;
-        saveJSON(STORAGE_KEYS.adds, cur);
-    },
-    removeAdd(id) {
-        const cur = loadJSON(STORAGE_KEYS.adds, {});
-        delete cur[id];
-        saveJSON(STORAGE_KEYS.adds, cur);
-    },
+  getAdds() { return loadJSON(STORAGE_KEYS.adds, {}); },
+  addMovie(movie) {
+    const id = String(movie.imdbID ?? movie.imdbId ?? movie.id);
+    if (!id) throw new Error('La película nueva debe tener imdbID');
+    const cur = loadJSON(STORAGE_KEYS.adds, {});
+    cur[id] = movie;
+    saveJSON(STORAGE_KEYS.adds, cur);
+  },
+  removeAdd(id) {
+    const cur = loadJSON(STORAGE_KEYS.adds, {});
+    delete cur[id];
+    saveJSON(STORAGE_KEYS.adds, cur);
+  },
 
-    // 🔹 Nuevo helper: obtener una película agregada por ID
-    getAdd(id) {
-        const cur = loadJSON(STORAGE_KEYS.adds, {});
-        return cur[String(id)] || null;
-    },
+  // 🔹 Nuevo helper: obtener una película agregada por ID
+  getAdd(id) {
+    const cur = loadJSON(STORAGE_KEYS.adds, {});
+    return cur[String(id)] || null;
+  },
 
-    getDeletes() { return loadJSON(STORAGE_KEYS.deletes, []); },
-    delete(id) {
-        const arr = new Set(loadJSON(STORAGE_KEYS.deletes, []));
-        arr.add(String(id));
-        saveJSON(STORAGE_KEYS.deletes, [...arr]);
-    },
-    undelete(id) {
-        const arr = new Set(loadJSON(STORAGE_KEYS.deletes, []));
-        arr.delete(String(id));
-        saveJSON(STORAGE_KEYS.deletes, [...arr]);
-    },
+  getDeletes() { return loadJSON(STORAGE_KEYS.deletes, []); },
+  delete(id) {
+    const arr = new Set(loadJSON(STORAGE_KEYS.deletes, []));
+    arr.add(String(id));
+    saveJSON(STORAGE_KEYS.deletes, [...arr]);
+  },
+  undelete(id) {
+    const arr = new Set(loadJSON(STORAGE_KEYS.deletes, []));
+    arr.delete(String(id));
+    saveJSON(STORAGE_KEYS.deletes, [...arr]);
+  },
 
-    // 🔹 Nuevo helper: saber si un id está eliminado
-    isDeleted(id) {
-        return loadJSON(STORAGE_KEYS.deletes, []).includes(String(id));
-    },
+  // 🔹 Nuevo helper: saber si un id está eliminado
+  isDeleted(id) {
+    return loadJSON(STORAGE_KEYS.deletes, []).includes(String(id));
+  },
 
-    resetAll() {
-        localStorage.removeItem(STORAGE_KEYS.overrides);
-        localStorage.removeItem(STORAGE_KEYS.adds);
-        localStorage.removeItem(STORAGE_KEYS.deletes);
-    }
+  resetAll() {
+    localStorage.removeItem(STORAGE_KEYS.overrides);
+    localStorage.removeItem(STORAGE_KEYS.adds);
+    localStorage.removeItem(STORAGE_KEYS.deletes);
+  }
 };
 
 // Aplica overrides y deletes a una lista venida de la API, y agrega “adds”
 function composeListWithLocal(data, { title = '', ubication = '' } = {}) {
-    const dset = new Set(store.getDeletes());
-    const ov = store.getOverrides();
-    const adds = store.getAdds();
+  const dset = new Set(store.getDeletes());
+  const ov = store.getOverrides();
+  const adds = store.getAdds();
 
-    const norm = (arr => (Array.isArray(arr) ? arr : []))
-        (data)
-        .filter(x => {
-            const id = String(x.imdbID ?? x.imdbId ?? x.id ?? '');
-            return id && !dset.has(id);
-        })
-        .map(x => {
-            const id = String(x.imdbID ?? x.imdbId ?? x.id ?? '');
-            return ov[id] ? ({ ...x, ...ov[id] }) : x;
-        });
+  const norm = (arr => (Array.isArray(arr) ? arr : []))
+    (data)
+    .filter(x => {
+      const id = String(x.imdbID ?? x.imdbId ?? x.id ?? '');
+      return id && !dset.has(id);
+    })
+    .map(x => {
+      const id = String(x.imdbID ?? x.imdbId ?? x.id ?? '');
+      return ov[id] ? ({ ...x, ...ov[id] }) : x;
+    });
 
-    // incluir agregadas locales que coincidan con filtros
-    const matches = (m) => {
-        const t = (title || '').toLowerCase();
-        const u = (ubication || '').toLowerCase();
-        const mt = (m.Title ?? m.title ?? '').toLowerCase().includes(t);
-        const mu = (m.Ubication ?? m.ubication ?? m.ubicacion ?? '').toLowerCase().includes(u);
-        return (t ? mt : true) && (u ? mu : true);
-    };
+  // incluir agregadas locales que coincidan con filtros
+  const matches = (m) => {
+    const t = (title || '').toLowerCase();
+    const u = (ubication || '').toLowerCase();
+    const mt = (m.Title ?? m.title ?? '').toLowerCase().includes(t);
+    const mu = (m.Ubication ?? m.ubication ?? m.ubicacion ?? '').toLowerCase().includes(u);
+    return (t ? mt : true) && (u ? mu : true);
+  };
 
-    const addList = Object.values(adds)
-        .filter(m => !dset.has(String(m.imdbID ?? m.imdbId ?? m.id ?? '')))
-        .filter(matches);
+  const addList = Object.values(adds)
+    .filter(m => !dset.has(String(m.imdbID ?? m.imdbId ?? m.id ?? '')))
+    .filter(matches);
 
-    return [...addList, ...norm];
+  return [...addList, ...norm];
 }
 
 // Funde overrides / deletes en un único objeto detalle
 function composeDetailWithLocal(movie, idMaybe) {
-    const id = String(
-        idMaybe ??
-        movie?.imdbID ?? movie?.imdbId ?? movie?.id ?? ''
-    );
+  const id = String(
+    idMaybe ??
+    movie?.imdbID ?? movie?.imdbId ?? movie?.id ?? ''
+  );
 
-    if (!id) return movie || null;
-    if (store.isDeleted(id)) return null;
+  if (!id) return movie || null;
+  if (store.isDeleted(id)) return null;
 
-    // Si la API no lo trae, probar si es una 'add' local
-    if (!movie) {
-        const added = store.getAdd(id);
-        if (!added) return null;
-        const ov = store.getOverrides()[id];
-        return ov ? { ...added, ...ov } : added;
-    }
-
-    // Si viene de API, aplicar override si existe
+  // Si la API no lo trae, probar si es una 'add' local
+  if (!movie) {
+    const added = store.getAdd(id);
+    if (!added) return null;
     const ov = store.getOverrides()[id];
-    return ov ? { ...movie, ...ov } : movie;
+    return ov ? { ...added, ...ov } : added;
+  }
+
+  // Si viene de API, aplicar override si existe
+  const ov = store.getOverrides()[id];
+  return ov ? { ...movie, ...ov } : movie;
 }
 
 const AdminView = {
-    name: 'AdminView',
-    setup() {
-        const router = useRouter();
+  name: 'AdminView',
+  setup() {
+    const router = useRouter();
 
-        // Formularios
-        const formAdd = ref({ imdbID: '', Title: '', Year: '', Type: '', Ubication: '', description: '', Poster: '' });
-        const formEditId = ref('');
-        const formEdit = ref(null);
-        const message = ref('');
-        const error = ref('');
+    // Formularios
+    const formAdd = ref({ imdbID: '', Title: '', Year: '', Type: '', Ubication: '', description: '', Poster: '' });
+    const formEditId = ref('');
+    const formEdit = ref(null);
+    const message = ref('');
+    const error = ref('');
 
-        const loadForEdit = async () => {
-            error.value = ''; message.value = ''; formEdit.value = null;
-            const id = formEditId.value.trim();
-            if (!id) { error.value = 'Ingresa un imdbID para editar'; return; }
+    const loadForEdit = async () => {
+      error.value = ''; message.value = ''; formEdit.value = null;
+      const id = formEditId.value.trim();
+      if (!id) { error.value = 'Ingresa un imdbID para editar'; return; }
 
-            // 1) intenta API
-            let raw = null;
-            try {
-                const res = await fetch(buildDetailURL(id));
-                if (res.ok) {
-                    const data = await res.json();
-                    raw = Array.isArray(data) ? (data[0] || null) : data;
-                }
-            } catch { /* ignorar */ }
+      // 1) intenta API
+      let raw = null;
+      try {
+        const res = await fetch(buildDetailURL(id));
+        if (res.ok) {
+          const data = await res.json();
+          raw = Array.isArray(data) ? (data[0] || null) : data;
+        }
+      } catch { /* ignorar */ }
 
-            // 2) si no hay en API, intenta en agregadas locales
-            if (!raw) raw = store.getAdd(id);
-            if (!raw) { error.value = 'No encontrado (o eliminado localmente).'; return; }
+      // 2) si no hay en API, intenta en agregadas locales
+      if (!raw) raw = store.getAdd(id);
+      if (!raw) { error.value = 'No encontrado (o eliminado localmente).'; return; }
 
-            // 3) aplica overrides si existieran
-            const merged = composeDetailWithLocal(raw, id);
-            formEdit.value = {
-                imdbID: merged.imdbID ?? merged.imdbId ?? merged.id ?? id,
-                Title: merged.Title ?? merged.title ?? '',
-                Year: merged.Year ?? merged.year ?? '',
-                Type: merged.Type ?? merged.type ?? '',
-                Ubication: merged.Ubication ?? merged.ubication ?? merged.ubicacion ?? '',
-                Poster: getPosterUrl(merged) ?? '',
-                description: merged.description ?? merged.Descripcion ?? merged.Descripción ?? ''
-            };
-        };
+      // 3) aplica overrides si existieran
+      const merged = composeDetailWithLocal(raw, id);
+      formEdit.value = {
+        imdbID: merged.imdbID ?? merged.imdbId ?? merged.id ?? id,
+        Title: merged.Title ?? merged.title ?? '',
+        Year: merged.Year ?? merged.year ?? '',
+        Type: merged.Type ?? merged.type ?? '',
+        Ubication: merged.Ubication ?? merged.ubication ?? merged.ubicacion ?? '',
+        Poster: getPosterUrl(merged) ?? '',
+        description: merged.description ?? merged.Descripcion ?? merged.Descripción ?? ''
+      };
+    };
 
-        const saveAdd = () => {
-            try {
-                const m = { ...formAdd.value };
-                if (!m.imdbID) throw new Error('imdbID es obligatorio');
-                store.addMovie(m);
-                message.value = `Película agregada localmente: ${m.imdbID}`;
-                formAdd.value = { imdbID: '', Title: '', Year: '', Type: '', Ubication: '', description: '', Poster: '' };
-            } catch (e) { error.value = e.message; }
-        };
+    const saveAdd = () => {
+      try {
+        const m = { ...formAdd.value };
+        if (!m.imdbID) throw new Error('imdbID es obligatorio');
+        store.addMovie(m);
+        message.value = `Película agregada localmente: ${m.imdbID}`;
+        formAdd.value = { imdbID: '', Title: '', Year: '', Type: '', Ubication: '', description: '', Poster: '' };
+      } catch (e) { error.value = e.message; }
+    };
 
-        const saveEdit = () => {
-            try {
-                if (!formEdit.value?.imdbID) throw new Error('imdbID es obligatorio');
-                const id = String(formEdit.value.imdbID);
+    const saveEdit = () => {
+      try {
+        if (!formEdit.value?.imdbID) throw new Error('imdbID es obligatorio');
+        const id = String(formEdit.value.imdbID);
 
-                // Si la película fue AGREGADA localmente, actualizamos la add
-                if (store.getAdd(id)) {
-                    const curAdds = store.getAdds();
-                    curAdds[id] = { ...curAdds[id], ...formEdit.value };
-                    saveJSON(STORAGE_KEYS.adds, curAdds);
-                } else {
-                    // Si viene de la API, guardamos override
-                    store.setOverride(id, { ...formEdit.value });
-                }
-                message.value = `Cambios guardados para ${id}`;
-            } catch (e) { error.value = e.message; }
-        };
+        // Si la película fue AGREGADA localmente, actualizamos la add
+        if (store.getAdd(id)) {
+          const curAdds = store.getAdds();
+          curAdds[id] = { ...curAdds[id], ...formEdit.value };
+          saveJSON(STORAGE_KEYS.adds, curAdds);
+        } else {
+          // Si viene de la API, guardamos override
+          store.setOverride(id, { ...formEdit.value });
+        }
+        message.value = `Cambios guardados para ${id}`;
+      } catch (e) { error.value = e.message; }
+    };
 
-        const doDelete = () => {
-            try {
-                const id = (formEditId.value.trim() || formEdit.value?.imdbID || '').trim();
-                if (!id) throw new Error('indica imdbID');
+    const doDelete = () => {
+      try {
+        const id = (formEditId.value.trim() || formEdit.value?.imdbID || '').trim();
+        if (!id) throw new Error('indica imdbID');
 
-                // Si es una 'add', la quitamos del listado de agregadas (borrado real)
-                if (store.getAdd(id)) {
-                    store.removeAdd(id);
-                    message.value = `Eliminada del almacenamiento local: ${id}`;
-                } else {
-                    // Si es una de la API, la marcamos como eliminada (soft-delete)
-                    store.delete(id);
-                    message.value = `Marcada como eliminada: ${id}`;
-                }
-            } catch (e) { error.value = e.message; }
-        };
+        // Si es una 'add', la quitamos del listado de agregadas (borrado real)
+        if (store.getAdd(id)) {
+          store.removeAdd(id);
+          message.value = `Eliminada del almacenamiento local: ${id}`;
+        } else {
+          // Si es una de la API, la marcamos como eliminada (soft-delete)
+          store.delete(id);
+          message.value = `Marcada como eliminada: ${id}`;
+        }
+      } catch (e) { error.value = e.message; }
+    };
 
 
-        const undoDelete = () => {
-            try {
-                const id = formEditId.value.trim() || formEdit.value?.imdbID;
-                if (!id) throw new Error('indica imdbID');
-                store.undelete(id);
-                message.value = `Eliminación revertida: ${id}`;
-            } catch (e) { error.value = e.message; }
-        };
+    const undoDelete = () => {
+      try {
+        const id = formEditId.value.trim() || formEdit.value?.imdbID;
+        if (!id) throw new Error('indica imdbID');
+        store.undelete(id);
+        message.value = `Eliminación revertida: ${id}`;
+      } catch (e) { error.value = e.message; }
+    };
 
-        const resetAll = () => {
-            if (confirm('¿Borrar TODAS las modificaciones locales?')) {
-                store.resetAll();
-                message.value = 'Se limpiaron overrides, agregados y eliminados locales.';
-            }
-        };
+    const resetAll = () => {
+      if (confirm('¿Borrar TODAS las modificaciones locales?')) {
+        store.resetAll();
+        message.value = 'Se limpiaron overrides, agregados y eliminados locales.';
+      }
+    };
 
-        return { formAdd, formEditId, formEdit, message, error, loadForEdit, saveAdd, saveEdit, doDelete, undoDelete, resetAll };
-    },
-    template: `
+    return { formAdd, formEditId, formEdit, message, error, loadForEdit, saveAdd, saveEdit, doDelete, undoDelete, resetAll };
+  },
+  template: `
     <section class="container container-narrow py-3">
       <RouterLink :to="{name:'home'}" class="link-accent d-inline-block mb-3">← Volver</RouterLink>
       <h2 class="h4 mb-3">Administración local (sin tocar la API)</h2>
@@ -535,10 +535,10 @@ const AdminView = {
 
 // ===== Router =====
 const routes = [
-    { path: '/', name: 'home', component: ListView },
-    { path: '/detail/:imdbID', name: 'detail', component: DetailView, props: true },
-    { path: '/admin', name: 'admin', component: AdminView },
-    { path: '/:pathMatch(.*)*', redirect: { name: 'home' } }
+  { path: '/', name: 'home', component: ListView },
+  { path: '/detail/:imdbID', name: 'detail', component: DetailView, props: true },
+  { path: '/admin', name: 'admin', component: AdminView },
+  { path: '/:pathMatch(.*)*', redirect: { name: 'home' } }
 ];
 const router = createRouter({ history: createWebHashHistory(), routes });
 
